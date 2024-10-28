@@ -530,7 +530,12 @@ class Pedigree(object):
             if idx is not None and idx[:3] == "MF_":
                 print(f"ERROR: Invalid metafounder input format.\nExiting...")
                 sys.exit(2)
-            
+
+            # All individuals (and dummy individuals) in the pedigree are assigned the default metafounder.
+            # This is then updated using the pedigree input for the individuals in the base population (founders).
+            # But, all descendants will still have the default metafounder.
+            # When required, we can work with the Metafounder just for a founding individual using a condition like
+            #   if ind.MetaFounder == mfx and ind.isFounder(): 
             self.individuals[idx] = self.constructor(idx, self.maxIdn, MetaFounder=self.MainMetaFounder)
             self.maxIdn += 1
             self.individuals[idx].fileIndex['pedigree'] = index; index += 1
@@ -560,6 +565,7 @@ class Pedigree(object):
                     if (MFP and MFM):
                         # check if the metafounders match
                         if sireID == damID:
+                            # Overwrite the default metafounder.
                             ind.MetaFounder = sireID
                         else:
                             # expect more infomative error message
