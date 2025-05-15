@@ -201,6 +201,10 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
     startsnp = getattr(args, "startsnp", None)
     stopsnp = getattr(args, "stopsnp", None)
 
+    pedigree.MainMetaFounder = getattr(args, "main_metafounder", None)
+    if pedigree.MainMetaFounder[:3] != "MF_":
+        print(f"ERROR: The main_metafounder must start with MF_. \nExiting...")
+        sys.exit(2)
     pedigree.args = args
     pedigreeReadIn = False
 
@@ -232,6 +236,11 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
             print("Use of an external phase file is not currently supported. Phase information will be translated to genotype probabilities. If absolutely necessary use a penetrance file instead.") 
         for phase in args.phasefile:
             pedigree.readInPhase(phase, startsnp, stopsnp)
+    
+    aapfile = getattr(args, "alt_allele_prob_file", None)
+    if aapfile is not None:
+        for aap in args.alt_allele_prob_file:
+            pedigree.readInAAP(aap)
     
     bfile = getattr(args, "bfile", None)
     if bfile is not None: 
