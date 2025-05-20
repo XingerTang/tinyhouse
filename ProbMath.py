@@ -220,6 +220,11 @@ def generateErrorMat(error) :
     errorMat = errorMat/np.sum(errorMat, 1)[:,None]
     return errorMat
 
+def updateGenoProbsFromPhenotype(geno_probs, pheno, phenoPenetrance):
+    vals = geno_probs.copy() # Maybe does not need to be a copy?
+    vals = vals*phenoPenetrance[:,pheno].reshape(-1,1)
+    vals = vals/np.sum(vals, 0)[:None]
+    return vals
 
 def generateSegregationXXChrom(partial=False, e= 1e-06) :
     paternalTransmission = np.array([ [1, 1, 0, 0],[0, 0, 1, 1]])

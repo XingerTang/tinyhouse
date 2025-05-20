@@ -219,7 +219,27 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
     if genotypes is not None: 
         for geno in args.genotypes:
             pedigree.readInGenotypes(geno, startsnp, stopsnp)
-    
+
+    phenoPenetrance = getattr(args, "phenoPenetrance", None)
+    if phenoPenetrance is not None:
+        for phenoPen in args.phenoPenetrance:
+            pedigree.readInPhenotypePenetrance(phenoPen)
+
+    phenotype = getattr(args, "phenotype", None)
+    if phenotype is not None:
+        if phenoPenetrance is None:
+            print("ERROR: To use phenotype information, please provide a phenotype penetrance via '-pheno_penetrance_file'\nExiting...")
+            sys.exit(2)
+        if pedigree.nLoci > 1:
+            # For now, this will be removed once mapping of phenotype to genotype is done.
+            print(
+                "ERROR: Currently phenotype information can only be used with a single locus genotype input. Please either remove the pheno_file or use a single locus genotype input.\nExiting..."
+                )
+            sys.exit(2)
+
+        for pheno in args.phenotype:
+            pedigree.readInPhenotype(pheno)
+
     reference = getattr(args, "reference", None)    
     if reference is not None: 
         for ref in args.reference:
