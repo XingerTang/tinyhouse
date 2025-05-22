@@ -222,7 +222,14 @@ def generateErrorMat(error) :
 
 def updateGenoProbsFromPhenotype(geno_probs, pheno, phenoPenetrance):
     vals = geno_probs.copy() # Maybe does not need to be a copy?
-    vals = vals*phenoPenetrance[:,pheno].reshape(-1,1)
+    # Where there are repeated phenotype records, continue to multiply the penetrance as assumed independent.
+    repPhenotypes = len(phenotypes)
+    reps = 0
+    while reps < repPhenotypes:
+        pheno = phenotypes[reps]
+        vals = vals*phenoPenetrance[:,pheno].reshape(-1,1)
+        reps += 1
+    
     vals = vals/np.sum(vals, 0)[:None]
     return vals
 

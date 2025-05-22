@@ -900,6 +900,7 @@ class Pedigree(object):
         for value in data_list:
             idx, pheno = value
 
+            # Allows the input of multiple different phenotype traits.
             nPheno = len(pheno)
             if self.nPheno == 0:
                 self.nPheno = nPheno
@@ -911,8 +912,12 @@ class Pedigree(object):
                 self.individuals[idx] = self.constructor(idx, self.maxIdn)
                 self.maxIdn += 1
             ind = self.individuals[idx]
-            # Allows multiple phenotype inputs.
-            ind.phenotype = np.full(self.nPheno, pheno, dtype = np.int8)
+            
+            # List to store repeated phenotype records for the same trait.
+            if ind.phenotype == None:
+                ind.phenotype = []
+            ind.phenotype.append(np.full(self.nPheno, pheno, dtype = np.int8))
+
 
     def readInPhenotypePenetrance(self, fileName):
         """
