@@ -127,7 +127,6 @@ class Individual(object):
         if self.phenotype is not None:
             new_ind.phenotype = self.phenotype.copy()
     
-
     def getPercentMissing(self):
         return np.mean(self.genotypes == 9)
 
@@ -922,6 +921,7 @@ class Pedigree(object):
     def readInPhenotypePenetrance(self, fileName):
         """
         function for reading in the phenotype penetrance input
+        
         :param fileName: The file path
         :type filename: str
         """

@@ -220,7 +220,7 @@ def generateErrorMat(error) :
     errorMat = errorMat/np.sum(errorMat, 1)[:,None]
     return errorMat
 
-def updateGenoProbsFromPhenotype(geno_probs, pheno, phenoPenetrance):
+def updateGenoProbsFromPhenotype(geno_probs, phenotypes, phenoPenetrance):
     vals = geno_probs.copy() # Maybe does not need to be a copy?
     # Where there are repeated phenotype records, continue to multiply the penetrance as assumed independent.
     repPhenotypes = len(phenotypes)
@@ -230,8 +230,9 @@ def updateGenoProbsFromPhenotype(geno_probs, pheno, phenoPenetrance):
         vals = vals*phenoPenetrance[:,pheno].reshape(-1,1)
         reps += 1
     
-    vals = vals/np.sum(vals, 0)[:None]
+    vals = vals/np.sum(vals, 0)
     return vals
+
 
 def generateSegregationXXChrom(partial=False, e= 1e-06) :
     paternalTransmission = np.array([ [1, 1, 0, 0],[0, 0, 1, 1]])
