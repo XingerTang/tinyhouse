@@ -6,7 +6,7 @@
 
 - Added metafounders to pedigree ({pr}`23`, {user}`RosCraddock`, {user}`XingerTang`)
 
-- fix X chromosome's generateSegregation and errorMatrix ({pr}`24`, {user}`AprilYUZhang`)
+- Fix X chromosome's generateSegregation and errorMatrix ({pr}`24`, {user}`AprilYUZhang`)
 
 **Bug fixes**:
 
