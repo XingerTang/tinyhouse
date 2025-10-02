@@ -75,7 +75,13 @@ def getGenotypeProbabilities(
         valSeq = valSeq - maxVals
         valSeq = np.exp(valSeq)
         vals *= valSeq
-
+    if (np.sum(vals, 0) == 0).any() and XChrMaleFlag:
+        index_test=np.where(np.sum(vals, 0) < 1)[0]
+        warnings.warn(
+        f"Possible data issue: male genotype [position {genotypes[index_test]+1}] coded as '2', "
+        "which is biologically impossible.",
+        UserWarning
+        )
     return vals / np.sum(vals, 0)
 
 
