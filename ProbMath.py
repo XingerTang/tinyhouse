@@ -314,11 +314,10 @@ def generateSegregationXXChrom(partial=False, mu=1e-08):
 
     segregationTensor = np.zeros((4, 4, 4, 4))
     for segregation in range(2, 4):
+        father = maternalTransmission
         if segregation == 2:
-            father = maternalTransmission
             mother = paternalTransmission
         if segregation == 3:
-            father = maternalTransmission
             mother = maternalTransmission
 
         # !alleles: aa, aA, Aa, AA
