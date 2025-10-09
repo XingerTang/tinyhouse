@@ -96,6 +96,8 @@ class Individual(object):
         self.genotypedFounderStatus = None #?
 
         self.MetaFounder = MetaFounder
+
+        self.phenotype = None
     
     def __eq__(self, other):
         return self is other
@@ -121,7 +123,10 @@ class Individual(object):
         if self.reads is not None:
             new_ind.reads = (self.reads[0][start:stop].copy(), self.reads[1][start:stop].copy())
         return new_ind
-
+    
+        if self.phenotype is not None:
+            new_ind.phenotype = self.phenotype.copy()
+    
     def getPercentMissing(self):
         return np.mean(self.genotypes == 9)
 
@@ -248,6 +253,9 @@ class Pedigree(object):
 
         self.MainMetaFounder = None
         self.AAP = {}
+
+        self.phenoPenetrance = None
+        self.nPheno = 0
 
         # remove?
         self.maf=None #Maf is the frequency of 2s.
@@ -879,6 +887,48 @@ class Pedigree(object):
 
             if np.mean(genotypes == 9) < .1 :
                 ind.initHD = True
+
+    def readInPhenotype(self, fileName):
+        """function for reading in phenotype input
+        
+        :param fileName: The file path
+        :type fileName: str
+        """
+        data_list = MultiThreadIO.readLines(fileName, startsnp=None, stopsnp=None, dtype = np.float32)
+
+        for value in data_list:
+            idx, pheno = value
+
+            # Allows the input of multiple different phenotype traits.
+            nPheno = len(pheno)
+            if self.nPheno == 0:
+                self.nPheno = nPheno
+            if self.nPheno != nPheno:
+                print(f"ERROR: inconsistent number of phenotypes when reading in phenotype file. Expected {self.nPheno} got {nPheno}.\nExiting...")
+                sys.exit(2)
+
+            if idx not in self.individuals:
+                self.individuals[idx] = self.constructor(idx, self.maxIdn)
+                self.maxIdn += 1
+            ind = self.individuals[idx]
+            
+            # List to store repeated phenotype records for the same trait.
+            if ind.phenotype == None:
+                ind.phenotype = []
+            ind.phenotype.append(np.full(self.nPheno, pheno, dtype = np.int8))
+
+
+    def readInPhenotypePenetrance(self, fileName):
+        """
+        function for reading in the phenotype penetrance input
+        
+        :param fileName: The file path
+        :type filename: str
+        """
+
+        self.phenoPenetrance = np.loadtxt(fileName, dtype = np.float32)
+        self.phenoPenetrance = self.phenoPenetrance / np.sum(self.phenoPenetrance, 1)[:,None] # Normalising of the phenotype penetrance input so all rows sum to 1.
+
 
     def readInReferencePanel(self, fileName, startsnp=None, stopsnp = None):
 
