@@ -313,8 +313,8 @@ def generateSegregationXXChrom(partial=False, mu=1e-08):
     # !segregationOrder: pp, pm, mp, mm
 
     segregationTensor = np.zeros((4, 4, 4, 4))
+    father = maternalTransmission
     for segregation in range(2, 4):
-        father = maternalTransmission
         if segregation == 2:
             mother = paternalTransmission
         if segregation == 3:
