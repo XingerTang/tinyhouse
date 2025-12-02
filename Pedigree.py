@@ -536,7 +536,7 @@ class Pedigree(object):
 
             # check if the individual is a metafounder
             if idx is not None and idx[:3] == "MF_":
-                print(f"ERROR: Invalid metafounder input format.\nExiting...")
+                print(f"ERROR: Individual {idx} uses the prefix 'MF_' which is reserved for metafounders and cannot be used for an individual's id. \nExiting...")
                 sys.exit(2)
 
             # All individuals (and dummy individuals) in the pedigree are assigned the default metafounder.
@@ -577,11 +577,11 @@ class Pedigree(object):
                             ind.MetaFounder = sireID
                         else:
                             # expect more infomative error message
-                            print(f"ERROR: Invalid metafounder input format.\nExiting...")
+                            print(f"ERROR: The same metafounder is expected for both parents. For individual {idx} the metafounders were {sireID} and {damID}.\nExiting...")
                             sys.exit(2)
                     else:
                         # expect more infomative error message
-                        print(f"ERROR: Invalid metafounder input format.\nExiting...")
+                        print(f"ERROR: Both parents must be metafounders if one is a metafounder. For individual {idx} the parents were {sireID} and {damID}.\nExiting...")
                         sys.exit(2)
                 else:
                     if sireID is None:
@@ -1010,7 +1010,7 @@ class Pedigree(object):
             mfx, data = value
             nLoci = self.nLoci
             if len(data) != nLoci:
-                print("ERROR: Incorrect alternative allele probability input format. \nExiting...")
+                print(f"ERROR: For {mfx}, not all loci have an alternative allele frequency in the `-alt_allele_prob_file` input. \nExiting...")
                 sys.exit(2)
             if mfx[:3] == "MF_":
                 if mfx == MainMetaFounder:
@@ -1019,11 +1019,11 @@ class Pedigree(object):
                 try:
                     current_aap[:] = data
                 except ValueError:
-                    print("ERROR: Incorrect alternative allele probability input format. \nExiting...")
+                    print(f"ERROR: For {mfx}, the alternative allele frequency data gave a ValueError. Please check the `-alt_allele_prob_file` input. \nExiting...")
                     sys.exit(2)
                 self.AAP[mfx] = current_aap
             else:
-                print("ERROR: Incorrect alternative allele probability input format. \nExiting...")
+                print(f"ERROR: All metafounders must have the prefix 'MF_'. {mfx} does not but is present in the `-alt_allele_prob_file`. Please remove or rename {mfx}. \nExiting...")
                 sys.exit(2)
 
         if default_aap:
