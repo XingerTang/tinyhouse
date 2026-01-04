@@ -95,7 +95,7 @@ class Individual(object):
 
         self.genotypedFounderStatus = None #?
 
-        self.MetaFounder = MetaFounder
+        self.MetaFounder = [MetaFounder] if MetaFounder is not None else None
 
         self.phenotype = None
     
@@ -574,14 +574,11 @@ class Pedigree(object):
                         # check if the metafounders match
                         if sireID == damID:
                             # Overwrite the default metafounder.
-                            ind.MetaFounder = sireID
+                            ind.MetaFounder = [sireID]
                         else:
-                            # expect more infomative error message
-                            print(f"ERROR: The same metafounder is expected for both parents. For individual {idx} the metafounders were {sireID} and {damID}.\nExiting...")
-                            sys.exit(2)
+                            ind.MetaFounder = [sireID, damID]
                     else:
-                        # expect more infomative error message
-                        print(f"ERROR: Both parents must be metafounders if one is a metafounder. For individual {idx} the parents were {sireID} and {damID}.\nExiting...")
+                        print(f"ERROR: Both parents must be metafounders if one is a metafounder. For individual {idx} the parents were {sireID} and {damID}.\nConsider using a dummy individual for the metafounder.\nExiting...")
                         sys.exit(2)
                 else:
                     if sireID is None:

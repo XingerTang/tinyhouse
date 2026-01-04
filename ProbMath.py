@@ -13,6 +13,21 @@ def getGenotypesFromMaf(maf) :
 
     return mafGenotypes
 
+def getGenotypesFromMultiMaf(mafDict) :
+    nLoci = len(mafDict[list(mafDict.keys())[0]])
+    mafGenotypes = np.full((4, nLoci), .25, dtype = np.float32)
+    # Assumes two maf inputs.
+    # maf1 from the sire, maf2 from the dam.
+    maf1 = mafDict[list(mafDict.keys())[0]]
+    maf2 = mafDict[list(mafDict.keys())[1]]
+
+    mafGenotypes[0,:] = (1-maf1)*(1-maf2)
+    mafGenotypes[1,:] = (1-maf1)*(maf2)
+    mafGenotypes[2,:] = (maf1)*(1-maf2)
+    mafGenotypes[3,:] = maf1*maf2
+
+    return mafGenotypes
+
 def getGenotypeProbabilities_ind(ind, args = None, log = False):
     if args is None:
         error = 0.01
