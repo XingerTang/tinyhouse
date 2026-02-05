@@ -201,6 +201,10 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
     startsnp = getattr(args, "startsnp", None)
     stopsnp = getattr(args, "stopsnp", None)
 
+    pedigree.MainMetaFounder = getattr(args, "main_metafounder", None)
+    if pedigree.MainMetaFounder[:3] != "MF_":
+        print(f"ERROR: The main_metafounder must start with MF_. \nExiting...")
+        sys.exit(2)
     pedigree.args = args
     pedigreeReadIn = False
 
@@ -215,7 +219,27 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
     if genotypes is not None: 
         for geno in args.genotypes:
             pedigree.readInGenotypes(geno, startsnp, stopsnp)
-    
+
+    phenoPenetrance = getattr(args, "phenoPenetrance", None)
+    if phenoPenetrance is not None:
+        for phenoPen in args.phenoPenetrance:
+            pedigree.readInPhenotypePenetrance(phenoPen)
+
+    phenotype = getattr(args, "phenotype", None)
+    if phenotype is not None:
+        if phenoPenetrance is None:
+            print("ERROR: To use phenotype information, please provide a phenotype penetrance via '-pheno_penetrance_file'\nExiting...")
+            sys.exit(2)
+        if pedigree.nLoci > 1:
+            # For now, this will be removed once mapping of phenotype to genotype is done.
+            print(
+                "ERROR: Currently phenotype information can only be used with a single locus genotype input. Please either remove the pheno_file or use a single locus genotype input.\nExiting..."
+                )
+            sys.exit(2)
+
+        for pheno in args.phenotype:
+            pedigree.readInPhenotype(pheno)
+
     reference = getattr(args, "reference", None)    
     if reference is not None: 
         for ref in args.reference:
@@ -232,6 +256,11 @@ def readInPedigreeFromInputs(pedigree, args, genotypes=True, haps=False, reads=F
             print("Use of an external phase file is not currently supported. Phase information will be translated to genotype probabilities. If absolutely necessary use a penetrance file instead.") 
         for phase in args.phasefile:
             pedigree.readInPhase(phase, startsnp, stopsnp)
+    
+    aapfile = getattr(args, "alt_allele_prob_file", None)
+    if aapfile is not None:
+        for aap in args.alt_allele_prob_file:
+            pedigree.readInAAP(aap)
     
     bfile = getattr(args, "bfile", None)
     if bfile is not None: 

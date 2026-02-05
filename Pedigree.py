@@ -47,7 +47,7 @@ class jit_Family(object):
 
 class Individual(object):
     
-    def __init__(self, idx, idn) :
+    def __init__(self, idx, idn, MetaFounder=None) :
 
         self.genotypes = None
         self.haplotypes = None
@@ -94,6 +94,10 @@ class Individual(object):
         self.is_high_density = False
 
         self.genotypedFounderStatus = None #?
+
+        self.MetaFounder = [MetaFounder] if MetaFounder is not None else None
+
+        self.phenotype = None
     
     def __eq__(self, other):
         return self is other
@@ -119,7 +123,10 @@ class Individual(object):
         if self.reads is not None:
             new_ind.reads = (self.reads[0][start:stop].copy(), self.reads[1][start:stop].copy())
         return new_ind
-
+    
+        if self.phenotype is not None:
+            new_ind.phenotype = self.phenotype.copy()
+    
     def getPercentMissing(self):
         return np.mean(self.genotypes == 9)
 
@@ -244,6 +251,13 @@ class Pedigree(object):
 
         self.referencePanel = [] #This should be an array of haplotypes. Or a dictionary?
 
+        self.MainMetaFounder = None
+        self.AAP = {}
+
+        self.phenoPenetrance = None
+        self.nPheno = 0
+
+        # remove?
         self.maf=None #Maf is the frequency of 2s.
 
         # Threshold that determines if an individual is high-density genotyped
@@ -462,7 +476,7 @@ class Pedigree(object):
 
     def getIndividual(self, idx) :
         if idx not in self.individuals:
-            self.individuals[idx] = self.constructor(idx, self.maxIdn)
+            self.individuals[idx] = self.constructor(idx, self.maxIdn, MetaFounder=self.MainMetaFounder)
             self.maxIdn += 1
             self.generations = None
         return self.individuals[idx]
@@ -517,44 +531,81 @@ class Pedigree(object):
 
     def readInPedigreeFromList(self, pedList):
         index = 0
-        for parts in pedList :
+        for parts in pedList:
             idx = parts[0]
-            self.individuals[idx] = self.constructor(idx, self.maxIdn)
+
+            # check if the individual is a metafounder
+            if idx is not None and idx[:3] == "MF_":
+                print(f"ERROR: Individual {idx} uses the prefix 'MF_' which is reserved for metafounders and cannot be used for an individual's id. \nExiting...")
+                sys.exit(2)
+
+            # All individuals (and dummy individuals) in the pedigree are assigned the default metafounder.
+            # This is then updated using the pedigree input for the individuals in the base population (founders).
+            # But, all descendants will still have the default metafounder.
+            # When required, we can work with the Metafounder just for a founding individual using a condition like
+            #   if ind.MetaFounder == mfx and ind.isFounder(): 
+            self.individuals[idx] = self.constructor(idx, self.maxIdn, MetaFounder=self.MainMetaFounder)
             self.maxIdn += 1
             self.individuals[idx].fileIndex['pedigree'] = index; index += 1
 
-        for parts in pedList :
+        for parts in pedList:
             idx = parts[0]
-            if parts[1] == "0": parts[1] = None
-            if parts[2] == "0": parts[2] = None
-            
-            if parts[1] is not None and parts[2] is None:
-                parts[2] = "MotherOf"+parts[0]
-            if parts[2] is not None and parts[1] is None:
-                parts[1] = "FatherOf"+parts[0] 
+            sireID = parts[1]
+            damID = parts[2]
+            ind = self.individuals[idx]
 
-            ind = self.individuals[parts[0]]
+            # check if parents are metafounders
+            if sireID == "0":
+                sireID = None
+                MFP = False
+            else:
+                MFP = (sireID[:3] == "MF_")
+            if damID == "0":
+                damID = None
+                MFM = False
+            else:
+                MFM = (damID[:3] == "MF_")
+
+            if sireID or damID:
+                # check if one of the parents is a metafounder
+                if (MFP or MFM):
+                    # check if both of the parents are metafounders
+                    if (MFP and MFM):
+                        # check if the metafounders match
+                        if sireID == damID:
+                            # Overwrite the default metafounder.
+                            ind.MetaFounder = [sireID]
+                        else:
+                            ind.MetaFounder = [sireID, damID]
+                    else:
+                        print(f"ERROR: Both parents must be metafounders if one is a metafounder. For individual {idx} the parents were {sireID} and {damID}.\nConsider using a dummy individual for the metafounder.\nExiting...")
+                        sys.exit(2)
+                else:
+                    if sireID is None:
+                        sireID = "FatherOf" + idx
+                    elif damID is None:
+                        damID = "MotherOf" + idx
             
-            if parts[1] is not None:
-                if parts[1] not in self.individuals:
-                    self.individuals[parts[1]] = self.constructor(parts[1], self.maxIdn)
+            if sireID and not MFP:
+                if sireID not in self.individuals:
+                    self.individuals[sireID] = self.constructor(sireID, self.maxIdn, MetaFounder=self.MainMetaFounder)
+                    sire = self.individuals[sireID]
                     self.maxIdn += 1
-                    self.individuals[parts[1]].fileIndex['pedigree'] = index; index += 1
-                    self.individuals[parts[1]].dummy=True
-
-                sire = self.individuals[parts[1]]
+                    sire.dummy = True
+                else:
+                    sire = self.individuals[sireID]
                 ind.sire = sire
                 sire.offspring.append(ind)
                 sire.sex = 0
 
-            if parts[2] is not None:
-                if parts[2] not in self.individuals:
-                    self.individuals[parts[2]] = self.constructor(parts[2], self.maxIdn)
+            if damID and not MFM:
+                if damID not in self.individuals:
+                    self.individuals[damID] = self.constructor(damID, self.maxIdn, MetaFounder=self.MainMetaFounder)
+                    dam = self.individuals[damID]
                     self.maxIdn += 1
-                    self.individuals[parts[2]].fileIndex['pedigree'] = index; index += 1
-                    self.individuals[parts[2]].dummy=True
-
-                dam = self.individuals[parts[2]]
+                    dam.dummy = True
+                else:
+                    dam = self.individuals[damID]
                 ind.dam = dam
                 dam.offspring.append(ind)
                 dam.sex = 1
@@ -834,6 +885,48 @@ class Pedigree(object):
             if np.mean(genotypes == 9) < .1 :
                 ind.initHD = True
 
+    def readInPhenotype(self, fileName):
+        """function for reading in phenotype input
+        
+        :param fileName: The file path
+        :type fileName: str
+        """
+        data_list = MultiThreadIO.readLines(fileName, startsnp=None, stopsnp=None, dtype = np.float32)
+
+        for value in data_list:
+            idx, pheno = value
+
+            # Allows the input of multiple different phenotype traits.
+            nPheno = len(pheno)
+            if self.nPheno == 0:
+                self.nPheno = nPheno
+            if self.nPheno != nPheno:
+                print(f"ERROR: inconsistent number of phenotypes when reading in phenotype file. Expected {self.nPheno} got {nPheno}.\nExiting...")
+                sys.exit(2)
+
+            if idx not in self.individuals:
+                self.individuals[idx] = self.constructor(idx, self.maxIdn)
+                self.maxIdn += 1
+            ind = self.individuals[idx]
+            
+            # List to store repeated phenotype records for the same trait.
+            if ind.phenotype == None:
+                ind.phenotype = []
+            ind.phenotype.append(np.full(self.nPheno, pheno, dtype = np.int8))
+
+
+    def readInPhenotypePenetrance(self, fileName):
+        """
+        function for reading in the phenotype penetrance input
+        
+        :param fileName: The file path
+        :type filename: str
+        """
+
+        self.phenoPenetrance = np.loadtxt(fileName, dtype = np.float32)
+        self.phenoPenetrance = self.phenoPenetrance / np.sum(self.phenoPenetrance, 1)[:,None] # Normalising of the phenotype penetrance input so all rows sum to 1.
+
+
     def readInReferencePanel(self, fileName, startsnp=None, stopsnp = None):
 
         print("Reading in reference panel:", fileName)
@@ -895,6 +988,43 @@ class Pedigree(object):
 
             ind.reads[e][:] = reads
             e = 1-e
+
+    def readInAAP(self, fileName):
+        """function for reading alternative allele probability input
+
+        :param fileName: The file path
+        :type fileName: str
+        """        
+        data_list = MultiThreadIO.readLines(fileName, startsnp=None, stopsnp=None, dtype = np.float32)
+
+        # flag of whether adding a default alternative allele probability
+        default_aap = False
+        MainMetaFounder = self.MainMetaFounder
+        if MainMetaFounder:
+            default_aap = True
+
+        for value in data_list:
+            mfx, data = value
+            nLoci = self.nLoci
+            if len(data) != nLoci:
+                print(f"ERROR: For {mfx}, not all loci have an alternative allele frequency in the `-alt_allele_prob_file` input. \nExiting...")
+                sys.exit(2)
+            if mfx[:3] == "MF_":
+                if mfx == MainMetaFounder:
+                    default_aap = False
+                current_aap = np.zeros(nLoci, dtype=np.float32)
+                try:
+                    current_aap[:] = data
+                except ValueError:
+                    print(f"ERROR: For {mfx}, the alternative allele frequency data gave a ValueError. Please check the `-alt_allele_prob_file` input. \nExiting...")
+                    sys.exit(2)
+                self.AAP[mfx] = current_aap
+            else:
+                print(f"ERROR: All metafounders must have the prefix 'MF_'. {mfx} does not but is present in the `-alt_allele_prob_file`. Please remove or rename {mfx}. \nExiting...")
+                sys.exit(2)
+
+        if default_aap:
+            self.AAP[MainMetaFounder] = np.full(nLoci, 0.5, dtype=np.float32)
 
 
     def callGenotypes(self, threshold):

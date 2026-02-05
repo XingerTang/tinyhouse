@@ -1,10 +1,12 @@
 # Changelog
 
-## [X.Y.Z] - 2023-XX-XX
+## [X.Y.Z] - 2025-XX-XX
 
 **New features**
 
-- TODO
+- Added metafounders to pedigree ({pr}`23`, {user}`RosCraddock`, {user}`XingerTang`)
+
+- Fix X chromosome's generateSegregation and errorMatrix ({pr}`24`, {user}`AprilYUZhang`)
 
 **Bug fixes**:
 
@@ -21,10 +23,8 @@
 - We have revised and polished the documentation.
 
 **Breaking changes**:
-
-- TODO - mention the change/consolidation of argument names.
   
 - There has been an unfortunate split in the codebase between AlphaImpute2 and AlphaPlantImpute2
   in `writePhase()` as reported at AlphaImpute2 repo (https://github.com/AlphaGenes/AlphaImpute2/issues/16).
   We decided to revert back to the initial form used before the code split, which will break
-  AlphaPlantImpute2 for now, but that will be fixed later. ({pr}`4, {user}`XingerTang`)
+  AlphaPlantImpute2 for now, but that will be fixed later. ({issue}`8`, {issue}`1`, {pr}`4, {user}`XingerTang`)
