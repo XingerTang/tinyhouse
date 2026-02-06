@@ -1,6 +1,10 @@
+tinyhouse
+=========
 Hello,
 
-Welcome to tinyhouse, an increasingly non light-weight python module for processing genotypes and pedigrees, and for performing common operations for livestock breeding settings. This document is designed to give a brief overview of this software package, including some over-arching design philosophies, and some specifics about programs that use our software.
+Welcome to tinyhouse, an increasingly non light-weight python module for processing genotypes and pedigrees, and for performing common operations for livestock breeding settings. 
+
+This document is designed to give a brief overview of this software package, including some over-arching design philosophies, and some specifics about programs that use our software.
 
 This document covers three main topics.
 
@@ -8,11 +12,10 @@ This document covers three main topics.
 2. a bit about what each of the files in tinyhouse contains. This is not a full exhaustive list though. It will also include areas where improvement is needed (and hopefully will take place in the near future!).
 3. It will include a brief overview of the software that depends on tinyhouse. The goal to give some idea of how it is currently being used, along with example programs that show how it might be used in the future.
 
-Some overarching ideas.
-======
+Some overarching ideas
+----------------------
 
-Python
-------
+### Python
 
 When I started writing this library, most of the group (myself included) was using Fortran as their primary coding language. This worked well because most of our legacy code in AlphaImpute and AlphaHouse was written in Fortran, and John knew and understood the language. As time went on, working with Fortran was creating more problems then it was solving, and so we started looking for other languages. Python was an obvious choice -- it is widely used both within and outside of academia. There are a large number of mature third party modules and libraries that can be taken advantage of. It is easy to learn, a joy to code in, and simple to deploy and maintain. It also provides (through `numpy` and `numba`) fast computational libraries that give C or Fortran like speed increases, with minimal overhead.
 
@@ -26,8 +29,7 @@ Most importantly, I believe that concerns over choosing a language for speed are
 
 -Andrew Whalen
  
-Numpy
----
+### Numpy
 
 `numpy` is a commonly used matrix library for python. It provides sensible matrix algebra, and because of the C/Fortran/MKL framework that underlies it, allows these operations to be very high-performance particularly for large matracies. It also interfaces well with `numba`. We use `numpy` arrays to store most of our genotypic data across our programs. 
 
@@ -62,8 +64,7 @@ np.full((nLoci, 3), 0, dtype = np.int8).
 ```
 
 
-numba
----
+### numba
 
 `numba` is a just in time (jit) compiler for python. The idea is that you take a normal python function, and add on a decorator[^1]. `numba` will then compile the function and give potentially massive speed gains. The existence and usability of `numba` is one of the key features that makes python a feasible language for us in the long term.
 
@@ -110,8 +111,8 @@ In our code we use both `ThreadPoolExecutor` and `ProcessPoolExecutor`, dependin
 
 For more information about Python's global interpreter lock, see e.g., https://wiki.python.org/moin/GlobalInterpreterLock
 
-Profiling
-----
+### Profiling
+
 
 For profiling, Kernprof seems to do a pretty good job. It requires adding the `@profile` decorator to functions. This will cause errors when not running the profiler. Because of this, many of the packages have the following lines in the header:
 ```
@@ -124,8 +125,7 @@ except:
 ```
 These lines look to see if profile is a valid function (i.e. if currently running with kernprof), otherwise it turns `profile` into the identity function.
 
-Style
-===
+### Style
 
 We vaugley follow PEP8: https://www.python.org/dev/peps/pep-0008/
 
@@ -135,7 +135,7 @@ Some exceptions:
 * underscores (\_) are inconsistently used to denote `@jit` functions and classes. 
 
 Folder layouts
-==============
+--------------
 
 All of the python programs should follow a similar layout.  For example, here is the layout for the program "AlphaCall".
 
@@ -187,55 +187,52 @@ In this folder, there are a number of mandatory files, and some optional files.
 
 
 Some files
-==========
+----------
 
-InputOutput.py
-----
+### InputOutput.py
+
 
 Need a lot of words here.
 
-BasicHMM.py 
-----
+### BasicHMM.py 
 
 This module contains code to run a simple Li and Stephens style HMM based on a set of reference haplotypes. This was originally generated for TinyPlantImpute. There is a haploid and a diploid version. Both need work. The primary functions are `haploidHMM` and `diploidHMM`. The haploid HMM takes in a single haplotype and a reference panel. The diploid HMM takes in an individual and a set of haplotype panels (for each sire/dam). There is an option to output either the called genotypes, dosages, or maximum likelihood (Viterbi) path, although not all of these algorithms are currently implemented for both options. 
 
-Pedigree.py 
-----
+### Pedigree.py 
+
 This module contains functions for storing data for individuals in a structured way. There are three main classes, `Individual`, `Pedigree`, and `Family`. The `Indivdiual` class provides a space for storing data related to an individual. This includes common data structures like genotypes, haplotypes, or read counts, and relationships with other individuals like sires, dams, or offspring. A `Family` object is a container for a full sib family (a single sire and dam, and their offspring). A `Pedigree` object is the default class for holding individuals. The primary container is a dictionary that contains all of the individuals indexed by ID number. It also includes an iterator to iterate over individuals in "generation" order (which places offspring after their parents). A large portion of the input/output is handled here and should be separated out. 
 
 
-ProbMath.py 
-----
+### ProbMath.py 
+
 This module contains some probability math that is shared between programs. The key function is `getGenotypeProbabilities_ind` which takes in an individual and returns a `4 x nLoci` matrix of genotype probabilities based on the individuals genotype and read count data. This is also where the transmission matrix lives for AlphaPeel, AlphaAssign, and AlphaFamImpute.
 
-HaplotypeOperations.py
-----
+### HaplotypeOperations.py
+
 This module contains some simple operations that can be performed on haplotypes.
 
 
-BurrowsWheelerLibrary.py and HaplotypeLibrary.py
------
+### BurrowsWheelerLibrary.py and HaplotypeLibrary.py
+
 These two modules include two different ways of constructing haplotype
 libraries. These are solely used by AlphaImpute2, and will be better documented when AlphaImpute2 gets a bit more mature.
 
 Some programs 
-===
+-------------
 
-AlphaImpute2.0
----
+### AlphaImpute2.0
+
 AlphaImpute is an imputation program for going from a low density SNP array to a high density SNP array. It is currently a work in progress.
 
-AlphaPeel
----
+### AlphaPeel
+
 AlphaPeel is a pedigree based imputation program. It is designed 
 
-AlphaCall
----
+### AlphaCall
 
 
-TinyPlantImpute
----
+### TinyPlantImpute
 
 
-AlphaFamImpute
----
+### AlphaFamImpute
+
