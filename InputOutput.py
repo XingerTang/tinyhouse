@@ -431,12 +431,10 @@ def readInPedigreeFromInputs(
             )
         for phase in args.phasefile:
             pedigree.readInPhase(phase, startsnp, stopsnp)
-
     aapfile = getattr(args, "alt_allele_prob_file", None)
     if aapfile is not None:
         for aap in args.alt_allele_prob_file:
             pedigree.readInAAP(aap)
-
     bfile = getattr(args, "bfile", None)
     if bfile is not None:
         global alphaplinkpython_avail
