@@ -73,7 +73,10 @@ def process_input_line(line, startsnp, stopsnp, dtype):
             startsnp : stopsnp + 1
         ]  # Offset 1 for id and 2 for id + include stopsnp
 
-    data = np.array([int(val) for val in parts], dtype=dtype)
+    if dtype in [np.float16, np.float32, np.float64]:
+        data = np.array([val for val in parts], dtype=dtype)
+    else:
+        data = np.array([int(val) for val in parts], dtype=dtype)
 
     return (idx, data)
 

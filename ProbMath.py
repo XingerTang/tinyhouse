@@ -15,17 +15,33 @@ def getGenotypesFromMaf(maf):
     return mafGenotypes
 
 
+def getGenotypesFromMultiMaf(mafDict):
+    nLoci = len(mafDict[list(mafDict.keys())[0]])
+    mafGenotypes = np.full((4, nLoci), 0.25, dtype=np.float32)
+    # Assumes two maf inputs.
+    # maf1 from the sire, maf2 from the dam.
+    maf1 = mafDict[list(mafDict.keys())[0]]
+    maf2 = mafDict[list(mafDict.keys())[1]]
+
+    mafGenotypes[0, :] = (1 - maf1) * (1 - maf2)
+    mafGenotypes[1, :] = (1 - maf1) * (maf2)
+    mafGenotypes[2, :] = (maf1) * (1 - maf2)
+    mafGenotypes[3, :] = maf1 * maf2
+
+    return mafGenotypes
+
+
 def getGenotypeProbabilities_ind(ind, args=None, log=False):
     if args is None:
         error = 0.01
         seqError = 0.001
-        sexChromFlag = False
+        XChrMaleFlag = False
     else:
         error = args.error
         seqError = args.seqerror
-        sexChromFlag = (
-            getattr(args, "sexchrom", False) and ind.sex == 0
-        )  # This is the sex chromosome and the individual is male.
+        XChrMaleFlag = (
+            getattr(args, "x_chr", False) and ind.sex == 0
+        )  # This is the x chromosome and the individual is male.
 
     if ind.reads is not None:
         nLoci = len(ind.reads[0])
@@ -33,27 +49,30 @@ def getGenotypeProbabilities_ind(ind, args=None, log=False):
         nLoci = len(ind.genotypes)
     if not log:
         return getGenotypeProbabilities(
-            nLoci, ind.genotypes, ind.reads, error, seqError, sexChromFlag
+            nLoci, ind.genotypes, ind.reads, error, seqError, XChrMaleFlag
         )
     else:
         return getGenotypeProbabilities_log(
-            nLoci, ind.genotypes, ind.reads, error, seqError, sexChromFlag
+            nLoci, ind.genotypes, ind.reads, error, seqError, XChrMaleFlag
         )
 
 
 def getGenotypeProbabilities(
-    nLoci, genotypes, reads, error=0.01, seqError=0.001, useSexChrom=False
+    nLoci, genotypes, reads, error=0.01, seqError=0.001, XChrMaleFlag=False
 ):
-    vals = np.full((4, nLoci), 0.25, dtype=np.float32)
+    vals = np.full((4, nLoci), 0.25, dtype=np.float32)  # penetrance for aa, aA, Aa, AA
     if type(error) is float:
         error = np.full(nLoci, error)
     if type(seqError) is float:
         seqError = np.full(nLoci, seqError)
 
-    errorMat = generateErrorMat(error)
-
     if genotypes is not None:
-        setGenoProbsFromGenotypes(genotypes, errorMat, vals)
+        if XChrMaleFlag:
+            errorMat = generateErrorMat_Xchr_male(error)
+            setGenoProbsFromGenotypes_Xchr_male(genotypes, errorMat, vals)
+        else:
+            errorMat = generateErrorMat(error)
+            setGenoProbsFromGenotypes(genotypes, errorMat, vals)
 
     if reads is not None:
         seqError = seqError
@@ -72,18 +91,17 @@ def getGenotypeProbabilities(
         valSeq = valSeq - maxVals
         valSeq = np.exp(valSeq)
         vals *= valSeq
-
-    if useSexChrom:
-        # Recode so we only care about the two homozygous states, but they are coded as 0, 1.
-        vals[1, :] = vals[3, :]
-        vals[2, :] = 0
-        vals[3, :] = 0
-
+    if (np.sum(vals, 0) == 0).any() and XChrMaleFlag:
+        index_test = np.where(np.sum(vals, 0) < 1)[0]
+        print(
+            f"Warning: Possible data issue: male genotype [position {index_test+1}] coded as '2',"
+            "which is biologically impossible."
+        )
     return vals / np.sum(vals, 0)
 
 
 def getGenotypeProbabilities_log(
-    nLoci, genotypes, reads, error=0.01, seqError=0.001, useSexChrom=False
+    nLoci, genotypes, reads, error=0.01, seqError=0.001, XChrMaleFlag=False
 ):
     vals = np.full((4, nLoci), 0.25, dtype=np.float32)
     if type(error) is float:
@@ -91,10 +109,13 @@ def getGenotypeProbabilities_log(
     if type(seqError) is float:
         seqError = np.full(nLoci, seqError)
 
-    errorMat = generateErrorMat(error)
-
     if genotypes is not None:
-        setGenoProbsFromGenotypes(genotypes, errorMat, vals)
+        if XChrMaleFlag:
+            errorMat = generateErrorMat_Xchr_male(error)
+            setGenoProbsFromGenotypes_Xchr_male(genotypes, errorMat, vals)
+        else:
+            errorMat = generateErrorMat(error)
+            setGenoProbsFromGenotypes(genotypes, errorMat, vals)
 
     vals = np.log(vals)
 
@@ -257,6 +278,17 @@ def setGenoProbsFromGenotypes(genotypes, errorMat, vals):
             vals[:, i] = errorMat[genotypes[i], :, i]
 
 
+@jit(nopython=True)
+def setGenoProbsFromGenotypes_Xchr_male(genotypes, errorMat, vals):
+    nLoci = len(genotypes)
+    for i in range(nLoci):
+        if genotypes[i] != 9:
+            if genotypes[i] == 2:
+                vals[:, i] = np.zeros(4)
+            else:
+                vals[:, i] = errorMat[genotypes[i], :, i]
+
+
 def generateErrorMat(error):
     errorMat = np.array(
         [
@@ -270,9 +302,39 @@ def generateErrorMat(error):
     return errorMat
 
 
-def generateSegregationXXChrom(partial=False, e=1e-06):
-    paternalTransmission = np.array([[1, 1, 0, 0], [0, 0, 1, 1]])
-    maternalTransmission = np.array([[1, 0, 1, 0], [0, 1, 0, 1]])
+def updateGenoProbsFromPhenotype(geno_probs, phenotypes, phenoPenetrance):
+    vals = geno_probs
+    # Where there are repeated phenotype records, continue to multiply the penetrance as assumed independent.
+    repPhenotypes = len(phenotypes)
+    reps = 0
+    while reps < repPhenotypes:
+        pheno = phenotypes[reps]
+        vals = vals * phenoPenetrance[:, pheno].reshape(-1, 1)
+        reps += 1
+
+    vals = vals / np.sum(vals, 0)
+    return vals
+
+
+def generateErrorMat_Xchr_male(error):
+    errorMat = np.array(
+        [
+            [1 - error, error, 1 - error, error],
+            [error, 1 - error, error, 1 - error],
+        ],
+        dtype=np.float32,
+    )
+    errorMat = errorMat / np.sum(errorMat, 1)[:, None]
+    return errorMat
+
+
+def generateSegregationXXChrom(partial=False, mu=1e-08):
+    paternalTransmission = np.array(
+        [[1 - mu, 1 - mu, mu, mu], [mu, mu, 1 - mu, 1 - mu]]
+    )  # Pa PA
+    maternalTransmission = np.array(
+        [[1 - mu, mu, 1 - mu, mu], [mu, 1 - mu, mu, 1 - mu]]
+    )  # Ma MA
 
     fatherAlleleCoding = np.array([0, 0, 1, 1])
     motherAlleleCoding = np.array([0, 1, 0, 1])
@@ -281,19 +343,11 @@ def generateSegregationXXChrom(partial=False, e=1e-06):
     # !segregationOrder: pp, pm, mp, mm
 
     segregationTensor = np.zeros((4, 4, 4, 4))
-    for segregation in range(4):
-        # Change so that father always passes on the maternal allele?
-        if segregation == 0:
-            father = maternalTransmission
-            mother = paternalTransmission
-        if segregation == 1:
-            father = maternalTransmission
-            mother = maternalTransmission
+    father = maternalTransmission
+    for segregation in range(2, 4):
         if segregation == 2:
-            father = maternalTransmission
             mother = paternalTransmission
         if segregation == 3:
-            father = maternalTransmission
             mother = maternalTransmission
 
         # !alleles: aa, aA, Aa, AA
@@ -302,17 +356,20 @@ def generateSegregationXXChrom(partial=False, e=1e-06):
                 father[fatherAlleleCoding[allele]], mother[motherAlleleCoding[allele]]
             )
 
-    segregationTensor = (
-        segregationTensor * (1 - e) + e / 4
-    )  # trace has 4 times as many elements as it should since it has 4 internal reps.
+    # segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
+    if partial:
+        segregationTensor = np.mean(segregationTensor, 3)
     segregationTensor = segregationTensor.astype(np.float32)
-
     return segregationTensor
 
 
-def generateSegregationXYChrom(partial=False, e=1e-06):
-    paternalTransmission = np.array([[1, 1, 0, 0], [0, 0, 1, 1]])
-    maternalTransmission = np.array([[1, 0, 1, 0], [0, 1, 0, 1]])
+def generateSegregationXYChrom(partial=False, mu=1e-08):
+    paternalTransmission = np.array(
+        [[1 - mu, 1 - mu, mu, mu], [mu, mu, 1 - mu, 1 - mu]]
+    )  # Pa PA
+    maternalTransmission = np.array(
+        [[1 - mu, mu, 1 - mu, mu], [mu, 1 - mu, mu, 1 - mu]]
+    )  # Ma MA
 
     motherAlleleCoding = np.array([0, 1, 0, 1])
 
@@ -320,14 +377,10 @@ def generateSegregationXYChrom(partial=False, e=1e-06):
     # !segregationOrder: pp, pm, mp, mm
     # They don't get anything from the father -- father is always 0
     segregationTensor = np.zeros((4, 4, 4, 4))
-    for segregation in range(4):
+    for segregation in range(0, 2):
         if segregation == 0:
             mother = paternalTransmission
         if segregation == 1:
-            mother = maternalTransmission
-        if segregation == 2:
-            mother = paternalTransmission
-        if segregation == 3:
             mother = maternalTransmission
 
         # !alleles: aa, aA, Aa, AA
@@ -337,17 +390,20 @@ def generateSegregationXYChrom(partial=False, e=1e-06):
                     motherAlleleCoding[allele]
                 ]
 
-    segregationTensor = (
-        segregationTensor * (1 - e) + e / 4
-    )  # trace has 4 times as many elements as it should since it has 4 internal reps.
+    # segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
+    if partial:
+        segregationTensor = np.mean(segregationTensor, 3)
     segregationTensor = segregationTensor.astype(np.float32)
-
     return segregationTensor
 
 
-def generateSegregation(partial=False, e=1e-06):
-    paternalTransmission = np.array([[1, 1, 0, 0], [0, 0, 1, 1]])
-    maternalTransmission = np.array([[1, 0, 1, 0], [0, 1, 0, 1]])
+def generateSegregation(partial=False, mu=1e-08):
+    paternalTransmission = np.array(
+        [[1 - mu, 1 - mu, mu, mu], [mu, mu, 1 - mu, 1 - mu]]
+    )  # Pa PA
+    maternalTransmission = np.array(
+        [[1 - mu, mu, 1 - mu, mu], [mu, 1 - mu, mu, 1 - mu]]
+    )  # Ma MA
 
     fatherAlleleCoding = np.array([0, 0, 1, 1])
     motherAlleleCoding = np.array([0, 1, 0, 1])
@@ -376,12 +432,10 @@ def generateSegregation(partial=False, e=1e-06):
                 father[fatherAlleleCoding[allele]], mother[motherAlleleCoding[allele]]
             )
 
+    # segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
     if partial:
         segregationTensor = np.mean(segregationTensor, 3)
 
-    segregationTensor = (
-        segregationTensor * (1 - e) + e / 4
-    )  # trace has 4 times as many elements as it should since it has 4 internal reps.
     segregationTensor = segregationTensor.astype(np.float32)
     return segregationTensor
 
@@ -396,7 +450,7 @@ def generateSegregation(partial=False, e=1e-06):
 #     errorMat = errorMat/np.sum(errorMat, 1)[:,None]
 #     return errorMat
 
-#  Not sure if below is ever used.
+# Not sure if below is ever used.
 # def generateTransmission(error) :
 #     paternalTransmission = np.array([ [1-error, 1.-error, error, error],
 #                                       [error, error, 1-error, 1-error]])
