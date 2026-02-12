@@ -16,7 +16,6 @@
 # import sys
 
 
-
 # -- Project information -----------------------------------------------------
 
 project = "tinyhouse"
