@@ -10,18 +10,18 @@ This guide is intended for developers who want to contribute to tinyhouse.
 It covers best practices for working with submodules and how to run tests.
 
 1. Make your changes in your fork of tinyhouse, or in the relevant branch of
-   AlphaPeel or AlphaImpute2 if the changes are specific to those programs.
+   AlphaSuite programs if the changes are specific to those programs.
 
 2. Push the changes to your fork of tinyhouse.
 
-3. Test the changes by running the tests in AlphaPeel and AlphaImpute2 with the
+3. Test the changes by running the tests in AlphaSuite programs with the
    updated tinyhouse submodule reference. For example:
 
    .. code-block:: bash
 
-      cd AlphaPeel
-      git remote add fork https://github.com/yourusername/tinyhouse.git
+      cd AlphaPeel # navigate to the AlphaPeel directory
       cd src/tinypeel/tinyhouse
+      git remote add fork https://github.com/yourusername/tinyhouse.git
       git fetch fork
       git checkout fork/your-branch
       cd ../../../
@@ -31,7 +31,9 @@ It covers best practices for working with submodules and how to run tests.
    If not, fix the issues and repeat steps 1–3 until all tests pass.
 
 5. In the pull request, include:
+
    - The commits of AlphaPeel and AlphaImpute2 used for testing.
+
    - Any other relevant information about the changes.
 
 

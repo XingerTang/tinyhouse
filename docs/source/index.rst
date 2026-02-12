@@ -10,6 +10,7 @@ Welcome to tinyhouse, an increasingly non light-weight python module for process
    
    get_started
    contribute
+   philosophy
    changelog
 
 .. highlight:: none
