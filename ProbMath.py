@@ -14,22 +14,24 @@ def getGenotypesFromMaf(maf):
 
     return mafGenotypes
 
-def getGenotypesFromMultiMaf(mafDict) :
+
+def getGenotypesFromMultiMaf(mafDict):
     nLoci = len(mafDict[list(mafDict.keys())[0]])
-    mafGenotypes = np.full((4, nLoci), .25, dtype = np.float32)
+    mafGenotypes = np.full((4, nLoci), 0.25, dtype=np.float32)
     # Assumes two maf inputs.
     # maf1 from the sire, maf2 from the dam.
     maf1 = mafDict[list(mafDict.keys())[0]]
     maf2 = mafDict[list(mafDict.keys())[1]]
 
-    mafGenotypes[0,:] = (1-maf1)*(1-maf2)
-    mafGenotypes[1,:] = (1-maf1)*(maf2)
-    mafGenotypes[2,:] = (maf1)*(1-maf2)
-    mafGenotypes[3,:] = maf1*maf2
+    mafGenotypes[0, :] = (1 - maf1) * (1 - maf2)
+    mafGenotypes[1, :] = (1 - maf1) * (maf2)
+    mafGenotypes[2, :] = (maf1) * (1 - maf2)
+    mafGenotypes[3, :] = maf1 * maf2
 
     return mafGenotypes
 
-def getGenotypeProbabilities_ind(ind, args = None, log = False):
+
+def getGenotypeProbabilities_ind(ind, args=None, log=False):
     if args is None:
         error = 0.01
         seqError = 0.001
@@ -90,10 +92,10 @@ def getGenotypeProbabilities(
         valSeq = np.exp(valSeq)
         vals *= valSeq
     if (np.sum(vals, 0) == 0).any() and XChrMaleFlag:
-        index_test=np.where(np.sum(vals, 0) < 1)[0]
+        index_test = np.where(np.sum(vals, 0) < 1)[0]
         print(
-        f"Warning: Possible data issue: male genotype [position {index_test+1}] coded as '2',"
-        "which is biologically impossible."
+            f"Warning: Possible data issue: male genotype [position {index_test+1}] coded as '2',"
+            "which is biologically impossible."
         )
     return vals / np.sum(vals, 0)
 
@@ -299,6 +301,7 @@ def generateErrorMat(error):
     errorMat = errorMat / np.sum(errorMat, 1)[:, None]
     return errorMat
 
+
 def updateGenoProbsFromPhenotype(geno_probs, phenotypes, phenoPenetrance):
     vals = geno_probs
     # Where there are repeated phenotype records, continue to multiply the penetrance as assumed independent.
@@ -306,10 +309,10 @@ def updateGenoProbsFromPhenotype(geno_probs, phenotypes, phenoPenetrance):
     reps = 0
     while reps < repPhenotypes:
         pheno = phenotypes[reps]
-        vals = vals*phenoPenetrance[:,pheno].reshape(-1,1)
+        vals = vals * phenoPenetrance[:, pheno].reshape(-1, 1)
         reps += 1
-    
-    vals = vals/np.sum(vals, 0)
+
+    vals = vals / np.sum(vals, 0)
     return vals
 
 
@@ -353,7 +356,7 @@ def generateSegregationXXChrom(partial=False, mu=1e-08):
                 father[fatherAlleleCoding[allele]], mother[motherAlleleCoding[allele]]
             )
 
-    #segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
+    # segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
     if partial:
         segregationTensor = np.mean(segregationTensor, 3)
     segregationTensor = segregationTensor.astype(np.float32)
@@ -387,7 +390,7 @@ def generateSegregationXYChrom(partial=False, mu=1e-08):
                     motherAlleleCoding[allele]
                 ]
 
-    #segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
+    # segregationTensor = segregationTensor*(1-e) + e/4 #trace has 4 times as many elements as it should since it has 4 internal reps.
     if partial:
         segregationTensor = np.mean(segregationTensor, 3)
     segregationTensor = segregationTensor.astype(np.float32)
@@ -447,7 +450,7 @@ def generateSegregation(partial=False, mu=1e-08):
 #     errorMat = errorMat/np.sum(errorMat, 1)[:,None]
 #     return errorMat
 
-## Not sure if below is ever used.
+# Not sure if below is ever used.
 # def generateTransmission(error) :
 #     paternalTransmission = np.array([ [1-error, 1.-error, error, error],
 #                                       [error, error, 1-error, 1-error]])

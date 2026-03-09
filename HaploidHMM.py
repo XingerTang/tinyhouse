@@ -1,10 +1,17 @@
 from numba import jit
 import numpy as np
 from . import NumbaUtils
-from . HaplotypeLibrary import haplotype_from_indices
+from .HaplotypeLibrary import haplotype_from_indices
 
-def haploidHMM(individual, source_haplotypes, error, recombination_rate, threshold=0.9, calling_method='dosages'):
 
+def haploidHMM(
+    individual,
+    source_haplotypes,
+    error,
+    recombination_rate,
+    threshold=0.9,
+    calling_method="dosages",
+):
     target_haplotype = individual.haplotypes
     n_loci = len(target_haplotype)
 
@@ -20,27 +27,31 @@ def haploidHMM(individual, source_haplotypes, error, recombination_rate, thresho
         recombination_rate = np.full(n_loci, recombination_rate, dtype=np.float32)
 
     # Construct penetrance values (point estimates)
-    point_estimates = getHaploidPointEstimates(target_haplotype, source_haplotypes, error)
+    point_estimates = getHaploidPointEstimates(
+        target_haplotype, source_haplotypes, error
+    )
 
     # Run forward-backward algorithm on penetrance values
     # Note: don't need these probabilites if using the sample method
-    if calling_method != 'sample':
+    if calling_method != "sample":
         total_probs = haploidForwardBackward(point_estimates, recombination_rate)
 
     # Handle the different calling methods
-    if calling_method == 'callhaps':
+    if calling_method == "callhaps":
         # Call haplotypes
         called_haps = haploidCallHaps(total_probs, threshold)
         # Call genotypes
         called_genotypes = getHaploidGenotypes(called_haps, source_haplotypes)
         return called_genotypes
-    if calling_method == 'dosages':
+    if calling_method == "dosages":
         dosages = getHaploidDosages(total_probs, source_haplotypes)
         individual.dosages = dosages
-    if calling_method == 'sample':
-        haplotype = getHaploidSample(point_estimates, recombination_rate, source_haplotypes)
+    if calling_method == "sample":
+        haplotype = getHaploidSample(
+            point_estimates, recombination_rate, source_haplotypes
+        )
         individual.imputed_haplotypes = haplotype
-    if calling_method == 'Viterbi':
+    if calling_method == "Viterbi":
         haplotype = get_viterbi(point_estimates, recombination_rate, source_haplotypes)
         individual.imputed_haplotypes = haplotype
 
@@ -75,7 +86,9 @@ def get_viterbi(point_estimates, recombination_rate, haplotype_library):
 @jit(nopython=True)
 def haploidCallHaps(hapEst, threshold):
     nHaps, nLoci = hapEst.shape
-    calledHaps = np.full(nLoci, -1, dtype=np.int64)  # These are haplotype ids. -1 is missing.
+    calledHaps = np.full(
+        nLoci, -1, dtype=np.int64
+    )  # These are haplotype ids. -1 is missing.
     for i in range(nLoci):
         maxVal = -1
         maxLoc = -1
@@ -90,7 +103,9 @@ def haploidCallHaps(hapEst, threshold):
 @jit(nopython=True)
 def getHaploidGenotypes(calledHaps, sourceHaplotypes):
     nHaps, nLoci = sourceHaplotypes.shape
-    calledGenotypes = np.full(nLoci, 9, dtype=np.int8) # These are haplotype ids. -1 is missing.
+    calledGenotypes = np.full(
+        nLoci, 9, dtype=np.int8
+    )  # These are haplotype ids. -1 is missing.
     for i in range(nLoci):
         if calledHaps[i] != -1:
             calledGenotypes[i] = sourceHaplotypes[calledHaps[i], i]
@@ -135,9 +150,9 @@ def haploidTransformProbs(previous, new, estimate, point_estimate, recombination
 
     # Account for recombination rate
     e = recombination_rate
-    e1 = 1-recombination_rate
+    e1 = 1 - recombination_rate
     for j in range(n_haps):
-        new[j] = new[j]*e1 + e/n_haps
+        new[j] = new[j] * e1 + e / n_haps
 
     # Update distributions (in place)
     for j in range(n_haps):
@@ -164,16 +179,20 @@ def haploidOneSample(forward_probs, recombination_rate):
     sample_indices = np.empty(n_loci, dtype=np.int64)
 
     # Backwards algorithm
-    for i in range(n_loci-2, -1, -1): # zero indexed then minus one since we skip the boundary
+    for i in range(
+        n_loci - 2, -1, -1
+    ):  # zero indexed then minus one since we skip the boundary
         # Sample at this locus
-        j = NumbaUtils.multinomial_sample(pvals=est[i+1, :])
+        j = NumbaUtils.multinomial_sample(pvals=est[i + 1, :])
         sampled_probs[:] = 0
         sampled_probs[j] = 1
-        sample_indices[i+1] = j
+        sample_indices[i + 1] = j
 
         # Get estimate at this locus using the *sampled* distribution
         # (instead of the point estimates/emission probabilities)
-        haploidTransformProbs(prev, new, est[i, :], sampled_probs, recombination_rate[i+1])
+        haploidTransformProbs(
+            prev, new, est[i, :], sampled_probs, recombination_rate[i + 1]
+        )
         # No need to normalise at this locus as multinomial_sample()
         # handles un-normalized probabilities
 
@@ -202,17 +221,21 @@ def haploid_viterbi(forward_probs, recombination_rate):
     indices = np.empty(n_loci, dtype=np.int64)
 
     # Backwards algorithm
-    for i in range(n_loci-2, -1, -1): # zero indexed then minus one since we skip the boundary
+    for i in range(
+        n_loci - 2, -1, -1
+    ):  # zero indexed then minus one since we skip the boundary
         # Choose the most likely state (i.e. max probability) at this locus
-        j = np.argmax(est[i+1, :])
+        j = np.argmax(est[i + 1, :])
 
         sampled_probs[:] = 0
         sampled_probs[j] = 1
-        indices[i+1] = j
+        indices[i + 1] = j
 
         # Get estimate at this locus using the most likely distribution
         # (instead of the point estimates/emission probabilities)
-        haploidTransformProbs(prev, new, est[i, :], sampled_probs, recombination_rate[i+1])
+        haploidTransformProbs(
+            prev, new, est[i, :], sampled_probs, recombination_rate[i + 1]
+        )
         # No need to normalise at this locus as argmax() does not depend on normalisation
 
     # Most likely state at the first locus
@@ -241,7 +264,9 @@ def haploidForward(point_estimate, recombination_rate):
 
     for i in range(1, n_loci):
         # Update estimates at this locus
-        haploidTransformProbs(prev, new, est[i, :], point_estimate[i-1, :], recombination_rate[i])
+        haploidTransformProbs(
+            prev, new, est[i, :], point_estimate[i - 1, :], recombination_rate[i]
+        )
 
     return est
 
@@ -255,9 +280,13 @@ def haploidBackward(point_estimate, recombination_rate):
     prev = np.ones(n_haps, dtype=np.float32)
     new = np.empty(n_haps, dtype=np.float32)
 
-    for i in range(n_loci-2, -1, -1):  # zero indexed then minus one since we skip the boundary
+    for i in range(
+        n_loci - 2, -1, -1
+    ):  # zero indexed then minus one since we skip the boundary
         # Update estimates at this locus
-        haploidTransformProbs(prev, new, est[i, :], point_estimate[i+1, :], recombination_rate[i+1])
+        haploidTransformProbs(
+            prev, new, est[i, :], point_estimate[i + 1, :], recombination_rate[i + 1]
+        )
 
     return est
 
@@ -266,8 +295,9 @@ def haploidBackward(point_estimate, recombination_rate):
 def haploidForwardBackward(point_estimate, recombination_rate):
     """Calculate normalized state probabilities at each loci using the forward-backward algorithm"""
 
-    est = (haploidForward(point_estimate, recombination_rate) *
-           haploidBackward(point_estimate, recombination_rate))
+    est = haploidForward(point_estimate, recombination_rate) * haploidBackward(
+        point_estimate, recombination_rate
+    )
 
     # Return normalized probabilities
     n_loci = point_estimate.shape[0]
