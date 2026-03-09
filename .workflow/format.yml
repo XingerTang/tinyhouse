@@ -1,0 +1,22 @@
+name: Evaluate code syntax
+on: [push, pull_request]
+
+jobs:
+    pre-commit_and_pytest:
+        name: Run pre-commit
+        strategy:
+          matrix:
+            os: [ubuntu-latest, Windows-latest, macos-latest]
+        runs-on: ${{ matrix.os }}
+        permissions:
+            contents: read
+        
+        steps:
+            - uses: actions/checkout@v3
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: "3.11.x"
+            
+            - uses: pre-commit/action@v3.0.0
+              name: Run pre-commit
