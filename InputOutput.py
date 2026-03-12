@@ -703,5 +703,5 @@ def print_boilerplate(name, version=None, commit=None, date=None):
         print(f"Date:    {date}")
 
     print("Email:   alphagenes@roslin.ed.ac.uk")
-    print("Website: http://alphagenes.roslin.ed.ac.uk")
+    print("Website: https://github.com/AlphaGenes")
     print("-" * width)

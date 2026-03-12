@@ -6,12 +6,12 @@ This document is designed to give a brief overview of this software package, inc
 
 This document covers three main topics.
 
-1. Some general philosophy about writing code in python, and using tinyhouse as a library.
+1. Some general philosophy about writing code in python, and using ``tinyhouse`` as a library.
 
-2. a bit about what each of the files in tinyhouse contains. This is not a full exhaustive list though. 
+2. a bit about what each of the files in ``tinyhouse`` contains. This is not a full exhaustive list though. 
 It will also include areas where improvement is needed (and hopefully will take place in the near future!).
 
-3. It will include a brief overview of the software that depends on tinyhouse. 
+3. It will include a brief overview of the software that depends on ``tinyhouse``. 
 The goal to give some idea of how it is currently being used, along with example programs that show how it might be used in the future.
 
 Some overarching ideas
@@ -21,9 +21,9 @@ Python
 ~~~~~~
 
 When I started writing this library, most of the group (myself included) was using Fortran as their primary coding language. 
-This worked well because most of our legacy code in AlphaImpute and AlphaHouse was written in Fortran, and John knew and understood the language. As time went on, working with Fortran was creating more problems then it was solving, and so we started looking for other languages. Python was an obvious choice -- it is widely used both within and outside of academia. There are a large number of mature third party modules and libraries that can be taken advantage of. It is easy to learn, a joy to code in, and simple to deploy and maintain. It also provides (through ``numpy`` and ``numba``) fast computational libraries that give C or Fortran like speed increases, with minimal overhead.
+This worked well because most of our legacy code in ``AlphaImpute`` and ``AlphaHouse`` was written in Fortran, and John knew and understood the language. As time went on, working with Fortran was creating more problems then it was solving, and so we started looking for other languages. Python was an obvious choice -- it is widely used both within and outside of academia. There are a large number of mature third party modules and libraries that can be taken advantage of. It is easy to learn, a joy to code in, and simple to deploy and maintain. It also provides (through ``numpy`` and ``numba``) fast computational libraries that give C or Fortran like speed increases, with minimal overhead.
 
-Many of these features stand in stark contrast to Fortran, which is no longer widely used, hard to code in, and lacks easy interfaces to common operations. Some simple data structures like linked lists and dictionaries are missing in Fortran, along with modern object-oriented programing principles like inheritance, and common operations like searching and sorting. Although it is possible (and AlphaImpute, AlphaPhase, and AlphaHouse impliment) these features, it takes a sizable number of developer-hours to do this, and porting them to different data structures is not always straightforward. These hurdles can make it expensive (in terms of developer-hours) to try out new ideas, or play around with new approaches and algorithms which hampered my ability to do research.
+Many of these features stand in stark contrast to Fortran, which is no longer widely used, hard to code in, and lacks easy interfaces to common operations. Some simple data structures like linked lists and dictionaries are missing in Fortran, along with modern object-oriented programing principles like inheritance, and common operations like searching and sorting. Although it is possible (and ``AlphaImpute``, ``AlphaPhase``, and ``AlphaHouse`` impliment) these features, it takes a sizable number of developer-hours to do this, and porting them to different data structures is not always straightforward. These hurdles can make it expensive (in terms of developer-hours) to try out new ideas, or play around with new approaches and algorithms which hampered my ability to do research.
 
 Computational speed has remained one of the main concerns about moving away from Fortran. This group uses a large amount of CPU time every month, and any computational savings can increase the throughput we have getting jobs through Eddie. In addition, some of the commercial partners we work with, need to be able to run our software in a short time frame (generally 24 hours on their data), and so an order of magnitude speed difference will matter.
 
@@ -39,7 +39,7 @@ Numpy
 ``numpy`` is a commonly used matrix library for python. It provides sensible matrix algebra, and because of the C/Fortran/MKL framework that underlies it, allows these operations to be very high-performance particularly for large matracies. 
 It also interfaces well with ``numba``. We use ``numpy`` arrays to store most of our genotypic data across our programs. 
 
-Because ``numba`` is type sensitive, and much of tinyhouse was developed to be ``numba`` aware, we tend to be explicit about the matrix type when declaring a numpy array. 
+Because ``numba`` is type sensitive, and much of ``tinyhouse`` was developed to be ``numba`` aware, we tend to be explicit about the matrix type when declaring a numpy array. 
 Failing to be explicit about types can lead to downstream compilation errors (which are generally not very informative, and can be tricky to debug). For example, if you want to allocate an empty array with 10 elements, use:
 
 .. code-block:: python
@@ -60,7 +60,7 @@ over
 
 As a general rule, use the following types for the following data structures:
 
-* ``float32``: General purpose floating point number. Most of the computations we make are not influenced by floating point errors (particularly in AlphaImpute and AlphaPeel), where the error rates or margins of uncertainty are much larger than the floating point precision. Because of this, it makes sense to store information like phenotypes, genotype probabilities, or genotype dosages as a ``float32`` over a ``float64``.
+* ``float32``: General purpose floating point number. Most of the computations we make are not influenced by floating point errors (particularly in ``AlphaImpute`` and ``AlphaPeel``), where the error rates or margins of uncertainty are much larger than the floating point precision. Because of this, it makes sense to store information like phenotypes, genotype probabilities, or genotype dosages as a ``float32`` over a ``float64``.
 
 * ``int64``: general purpose integer. Also used for sequence data read counts. There is a concern that an ``int32`` is not large  enough to handle future datasets (e.g. for very large pedigrees), but an ``int64`` should be more than enough.
 
@@ -115,7 +115,7 @@ The types of arguments that ``numba`` can accept is growing. Generally it can ta
 
 Some notes:
 
-* Generally in base python it is faster to use a numpy vectorized operation (e.g., for matrix addition). In ``numba`` this is not always the case. If the vector or matrix is small (under 100 elements) it is usually faster to write the explicit for loop. The speed increase for the for loop can be an order of magnitude greater than the vectorized operation. This occurs a lot in AlphaPeel since we are working with genotype probabilities that are of length 4. 
+* Generally in base python it is faster to use a numpy vectorized operation (e.g., for matrix addition). In ``numba`` this is not always the case. If the vector or matrix is small (under 100 elements) it is usually faster to write the explicit for loop. The speed increase for the for loop can be an order of magnitude greater than the vectorized operation. This occurs a lot in ``AlphaPeel`` since we are working with genotype probabilities that are of length 4. 
 
 * Auxiliary data structures: Although many objects can be passed to ``numba``, our ``individual`` and ``pedigree`` objects cannot. Although it may be possible to make them ``numba`` compatible, I think this would take a lot of work and would decrease their usability in the long term. One way around this is to create wrappers around a ``jit`` function which take an individual (or set of individuals) and performs a common operation on e.g. their genotypes. Alternatively we can use ``jit`` versions of a class, where e.g., individuals are replaced with integer id numbers.
 
@@ -240,7 +240,7 @@ This module contains functions for storing data for individuals in a structured 
 ``ProbMath.py``
 ~~~~~~~~~~~~~~~
 
-This module contains some probability math that is shared between programs. The key function is ``getGenotypeProbabilities_ind`` which takes in an individual and returns a ``4 x nLoci`` matrix of genotype probabilities based on the individuals genotype and read count data. This is also where the transmission matrix lives for AlphaPeel, AlphaAssign, and AlphaFamImpute.
+This module contains some probability math that is shared between programs. The key function is ``getGenotypeProbabilities_ind`` which takes in an individual and returns a ``4 x nLoci`` matrix of genotype probabilities based on the individuals genotype and read count data. This is also where the transmission matrix lives for ``AlphaPeel``, ``AlphaAssign``, and ``AlphaFamImpute``.
 
 ``HaplotypeOperations.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -251,5 +251,5 @@ This module contains some simple operations that can be performed on haplotypes.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These two modules include two different ways of constructing haplotype
-libraries. These are solely used by AlphaImpute2, and will be better documented when AlphaImpute2 gets a bit more mature.
+libraries. These are solely used by ``AlphaImpute2``, and will be better documented when ``AlphaImpute2`` gets a bit more mature.
 

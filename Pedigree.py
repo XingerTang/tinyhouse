@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import re
 from numba import jit, int64
 from numba.experimental import jitclass
 
@@ -7,10 +8,6 @@ from collections import OrderedDict
 from . import InputOutput
 from . import ProbMath
 from . import MultiThreadIO
-
-# Not sure of the code source: https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/
-# Slightly modified.
-import re
 
 
 class Family(object):
@@ -219,11 +216,17 @@ class PlantImputeIndividual(Individual):
 
 
 def sorted_nicely(list_to_sort, key):
-    """Sort the given iterable in the way that humans expect."""
+    """Sort the given iterable in the way that humans expect.
+    Modified from https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/
+
+    
+    """
     return sorted(list_to_sort, key=lambda k: alphanum_key(key(k)))
 
 
 def alphanum_key(k):
+    """Modified from https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/
+    """
     def convert(text):
         return int(text) if text.isdigit() else text
 
