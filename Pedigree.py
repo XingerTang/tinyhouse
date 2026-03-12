@@ -219,14 +219,14 @@ def sorted_nicely(list_to_sort, key):
     """Sort the given iterable in the way that humans expect.
     Modified from https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/
 
-    
+
     """
     return sorted(list_to_sort, key=lambda k: alphanum_key(key(k)))
 
 
 def alphanum_key(k):
-    """Modified from https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/
-    """
+    """Modified from https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/"""
+
     def convert(text):
         return int(text) if text.isdigit() else text
 

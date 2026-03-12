@@ -11,6 +11,7 @@ from collections import OrderedDict
 try:
     profile
 except NameError:
+
     def profile(x):
         return x
 
