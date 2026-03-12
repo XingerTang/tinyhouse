@@ -1,21 +1,21 @@
 Contribution and Development Guide
 ==================================
 
-Welcome to the tinyhouse contribution and development guide.
+Welcome to the ``tinyhouse`` contribution and development guide.
 
-tinyhouse is a collection of Python modules for processing genotypes and pedigrees.  
-It is used as a submodule in AlphaSuite programs such as AlphaPeel, AlphaImpute2, and others.
+``tinyhouse`` is a collection of Python modules for processing genotypes and pedigrees.  
+It is used as a submodule in AlphaSuite programs such as ``AlphaPeel``, ``AlphaImpute2``, and others.
 
-This guide is intended for developers who want to contribute to tinyhouse.  
+This guide is intended for developers who want to contribute to ``tinyhouse``.  
 It covers best practices for working with submodules and how to run tests.
 
-1. Make your changes in your fork of tinyhouse, or in the relevant branch of
+1. Make your changes in your fork of ``tinyhouse``, or in the relevant branch of
    AlphaSuite programs if the changes are specific to those programs.
 
-2. Push the changes to your fork of tinyhouse.
+2. Push the changes to your fork of ``tinyhouse``.
 
 3. Test the changes by running the tests in AlphaSuite programs with the
-   updated tinyhouse submodule reference. For example:
+   updated ``tinyhouse`` submodule reference. For example:
 
    .. code-block:: bash
 
@@ -32,7 +32,7 @@ It covers best practices for working with submodules and how to run tests.
 
 5. In the pull request, include:
 
-   - The commits of AlphaPeel and AlphaImpute2 used for testing.
+   - The commits of ``AlphaPeel`` and ``AlphaImpute2`` used for testing.
 
    - Any other relevant information about the changes.
 
