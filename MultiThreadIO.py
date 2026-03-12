@@ -27,7 +27,7 @@ def writeLines(fileName, data_list, fmt, converter=convert_data_to_line):
         if iothreads > 1:
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=iothreads
-            ) as executor: 
+            ) as executor:
                 # Break up into small-ish chunks to reduce overall memory cost.
                 # Hard code: splits into 1k individuals.
                 # These get then split up into one chunk per thread.
