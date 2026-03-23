@@ -72,6 +72,11 @@ def getParser(program):
             probability_parser, get_probability_options(), None
         )
 
+        multi_threads_parser = parser.add_argument_group("Multithreading arguments")
+        add_arguments_from_dictionary(
+            multi_threads_parser, get_multithread_options(), None
+        )
+
     if program in ["longreads"]:
         longread_parser = parser.add_argument_group("Long read arguments")
         longread_parser.add_argument(
