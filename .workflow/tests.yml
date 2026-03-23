@@ -20,3 +20,13 @@ jobs:
             
             - uses: pre-commit/action@v3.0.0
               name: Run pre-commit
+
+            - name: Install pytest
+              run: |
+                pip install pytest
+                pip install yappi
+
+            - name: Run pytest
+              run: |
+                pytest
+            

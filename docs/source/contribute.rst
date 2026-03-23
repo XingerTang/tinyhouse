@@ -37,4 +37,33 @@ It covers best practices for working with submodules and how to run tests.
    - Any other relevant information about the changes.
 
 
+Run tests
+----------
 
+The tests are availabe in the ``tests`` directory. To run the tests, navigate to the root directory.
+
+You should install ``pytest`` and ``yappi`` to run the tests. You can do this by running:
+
+.. code-block:: bash
+
+   pip install pytest
+   pip install yappi
+
+Then, you can run the tests by running:
+
+.. code-block:: bash
+
+   pytest
+
+
+Run pre-commit hooks
+--------------------
+
+If tests and examples pass, finally install ``pre-commit`` and the ``pre-commit`` hooks for code formatting.
+
+.. code-block:: bash
+
+    pip install pre-commit
+    pre-commit install
+
+Later on, the ``pre-commit`` hooks will automatically run on the files you have changed when you commit your changes.

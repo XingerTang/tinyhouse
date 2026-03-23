@@ -5,7 +5,7 @@ Getting Started
 An example
 ----------
 
-You can call the ``tinyhouse`` function by the following: 
+You can call the ``tinyhouse`` functions by the following: 
 
 .. code-block:: python
 
