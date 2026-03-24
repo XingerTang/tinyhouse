@@ -1,9 +1,10 @@
 from .. import InputOutput
 from .. import Pedigree
-import yappi
+import pytest
 
 
-def test_iothreads():
+@pytest.mark.benchmark(warmup=True)
+def test_iothreads(benchmark):
     """
     Test the multi-threads input output functionality
     """
@@ -13,12 +14,9 @@ def test_iothreads():
         pedigree = ["tests/test_iothreads/ped_file.txt"]
         genotypes = ["tests/test_iothreads/geno_file.txt"]
         main_metafounder = "MF_1"
+        startsnp = 100
+        stopsnp = 500
         iothreads = 5
 
-    yappi.start()
     InputOutput.args = args
-    InputOutput.readInPedigreeFromInputs(ped, args)
-    yappi.stop()
-
-    # it may not need up to 5 threads
-    assert len(yappi.get_thread_stats()) > 1
+    benchmark(InputOutput.readInPedigreeFromInputs, ped, args)

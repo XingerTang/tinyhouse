@@ -119,23 +119,33 @@ def readLines(fileName, startsnp, stopsnp, dtype, processor=process_input_line):
             # This could be more efficient, but it's dwarfed by some of the other stuff in the program.
             # i.e. line is roughly the same size as the haplotypes (2 bytes per genotype value, i.e. (space)(value); and two values per haplotype.
 
-            all_outputs = []
-            lines = list(itertools.islice(f, 1000))
-            while len(lines) > 0:
-                with concurrent.futures.ProcessPoolExecutor(
-                    max_workers=iothreads
-                ) as executor:
-                    chunk_output = executor.map(
+            # Use a queue to stream chunks from the file, rather than loading all at once
+            def read_file_in_chunks(file_obj, chunk_size=1000):
+                """Yield line batches without loading entire file into memory"""
+                batch = []
+                for line in file_obj:
+                    batch.append(line)
+                    if len(batch) >= chunk_size:
+                        yield batch
+                        batch = []
+                if batch:
+                    yield batch
+
+            # Then submit each batch to workers as it's read
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=iothreads
+            ) as executor:
+                output = []
+                for batch in read_file_in_chunks(f):
+                    result = executor.map(
                         processor,
-                        lines,
+                        batch,
                         itertools.repeat(startsnp),
                         itertools.repeat(stopsnp),
                         itertools.repeat(dtype),
-                        chunksize=math.ceil(1000 / iothreads),
                     )
-                all_outputs.append(chunk_output)
-                lines = list(itertools.islice(f, 1000))
-            output = itertools.chain.from_iterable(all_outputs)
+                    output.append(result)
+                output = itertools.chain.from_iterable(output)
 
         if iothreads <= 1:
             for line in f:
